@@ -14,5 +14,10 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         // \App\Models\User::factory(10)->create();
+
+        // Group all the specified seeder and migrate to database if run php artisan db:seed
+        $this->call([
+            UserTableSeeder::class,
+        ]);
     }
 }
