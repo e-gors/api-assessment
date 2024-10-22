@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\HistoryCollection;
 use App\Models\History;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,8 +17,11 @@ class HistoryController extends Controller
     public function index()
     {
         $user = Auth::user(); // Get the authenticated user ID
-        $histories = $user->histories; // Fetch histories for the user
-        return response()->json($histories);
+        $histories = $user->histories()->pluck('ip_address'); // Fetch only the ip_address column
+        return response()->json([
+            'status' => 200,
+            'data' => $histories->toArray() // Return as an array
+        ]);
     }
 
     /**
@@ -38,12 +42,8 @@ class HistoryController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'ip_address' => 'required|ip', // Validate that the input is an IP address
-        ]);
-
         $user = Auth::user();
-        $existingHistory = $user->histories()->where('ip_address', $request->ip_address)->first();
+        $existingHistory = $user->histories()->where('ip_address', $request->ip)->first();
 
         if ($existingHistory) {
             return response()->json(['message' => 'IP address already exists.'], 409);
@@ -51,10 +51,13 @@ class HistoryController extends Controller
 
         $history = new History();
         $history->user_id = $user->id; // Assign user ID from authenticated user
-        $history->ip_address = $request->ip_address;
+        $history->ip_address = $request->ip;
         $history->save();
 
-        return response()->json(['message' => 'History created successfully.'], 201);
+        return response()->json([
+            'status' => 201,
+            'data' => $user->histories()
+        ]);
     }
 
     /**
